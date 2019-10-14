@@ -1,0 +1,53 @@
+from numpy import*
+
+'''
+E步：依据当前模型参数，计算分模型k对观测数据Yj的响应度
+alpha,miu,sigma: 高斯混合模型参数
+N,K：观测数据个数及分模型个数
+yValue: 观测数据
+'''
+def eStep(yValue,N,K,alpha,miu,sigma):
+    gama=zeros((N,K))
+    for j in range(N):
+        Denom=0.0
+        Numer=mat(zeros((1,K)))
+        for k in range(K):
+            Numer[:,k]=(alpha[k]*exp((-(yValue[j]-miu[k])**2)
+                                     /(2*sigma[k]**2))/(2.506628*sigma[k]))#算分子
+            Denom += Numer[:,k]#算分母
+        gama[j, :] = Numer[:,:] / Denom
+    return gama
+'''
+M步：计算新一轮迭代的模型参数
+alpha,miu,sigma: 高斯混合模型参数
+N,K：观测数据个数及分模型个数
+yValue: 观测数据,gama:E步计算结果
+'''
+def mStep(yValue,gama,N,K,alpha,miu,sigma):
+    for k in range(K):
+        sum1 ,sum2, sum3= 0.0, 0.0, 0.0
+        Numer2=zeros((N,1))
+        sum1 = sum(multiply(gama[:,k],yValue[:]))
+        sum2 = sum(gama[:,k])
+        miu[k][0] = sum1/sum2#更新miu
+        alpha[k][0] = sum2/N#更新alpha
+        for j in range(N):
+            Numer2[j]=gama[j,k]*((yValue[j]-miu[k])**2)
+            sum3 += Numer2[j]
+        sigma[k][0] = sqrt(sum3/sum2)#更新sigma
+    return alpha,miu,sigma
+
+if __name__ == '__main__':
+    maxIterTimes=10
+    y = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    alpha = mat(zeros((2, 1)));alpha[0][0] = 0.5;alpha[1][0] = 1 - alpha[0][0]
+    miu = mat(ones((2, 1)));miu[0][0] = 30; miu[1][0] = 30
+    sigma = mat(ones((2, 1)));sigma[0][0] = 20; sigma[1][0] = 20
+    N=len(y)
+    for iterTimes in range(10):
+        #E步
+        gama = eStep(y, N, 2, alpha, miu, sigma)
+        #M步
+        mStep(y, gama, N, 2, alpha, miu, sigma)
+        print("miu : %s" % str(miu[:]))
+        print("sigma : %s" % str(sigma[:]))
